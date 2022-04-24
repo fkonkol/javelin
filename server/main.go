@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/fkonkol/javelin/server/account"
 	"github.com/fkonkol/javelin/server/data"
 )
 
@@ -27,9 +28,13 @@ func main() {
 	pool := data.InitSQL(DB_URI)
 	defer pool.Close()
 
-	mux := http.NewServeMux()
+	// Initialize endpoint handlers
+	accounts := account.NewHandler(pool)
 
+	// Setup routes
+	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthCheck)
+	mux.HandleFunc("/users/register", accounts.Register())
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
