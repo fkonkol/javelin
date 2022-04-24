@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Sign In</title>
+	<title>Sign Up</title>
 </svelte:head>
 
 <main class="mx-auto flex justify-center items-center w-screen h-screen font-sans">
