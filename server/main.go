@@ -28,6 +28,8 @@ func main() {
 	pool := data.InitSQL(DB_URI)
 	defer pool.Close()
 
+	sessions := data.InitSessionStore()
+
 	// Initialize endpoint handlers
 	accounts := account.NewHandler(pool)
 
