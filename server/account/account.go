@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,13 +21,12 @@ func NewHandler(db *pgxpool.Pool) *AccountHandler {
 
 // Handles user registration. Validates values given in request body,
 // then hashes password and inserts user into database.
-// TODO: Validate user input
 // TODO: Email code verification
 func (acc *AccountHandler) Register() http.HandlerFunc {
 	type Request struct {
-		Email    string `json:"email"`
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Email    string `json:"email" validate:"required,email"`
+		Username string `json:"username" validate:"required,alphanum"`
+		Password string `json:"password" validate:"required,min=8"`
 	}
 
 	query := "INSERT INTO users(email, username, password) VALUES($1, $2, $3)"
@@ -35,6 +35,14 @@ func (acc *AccountHandler) Register() http.HandlerFunc {
 		// Decode request body
 		var request Request
 		json.NewDecoder(r.Body).Decode(&request)
+
+		// Basic input validation
+		err := validator.New().Struct(request)
+		if err != nil {
+			log.Printf("User register input validation error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		// Hash password with bcrypt
 		hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
@@ -52,7 +60,7 @@ func (acc *AccountHandler) Register() http.HandlerFunc {
 			return
 		}
 
-		log.Printf("Successfully registrated user with email %s\n", request.Email)
+		log.Printf("Registered user with email %s\n", request.Email)
 
 		w.WriteHeader(http.StatusCreated)
 	}

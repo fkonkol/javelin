@@ -18,7 +18,7 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 var (
-	DB_URI string = os.Getenv("DB_URI")
+	DB_URI = os.Getenv("DB_URI")
 )
 
 func main() {
