@@ -28,15 +28,17 @@ func main() {
 	pool := data.InitSQL(DB_URI)
 	defer pool.Close()
 
+	// Redis cache used for storing account sessions
 	sessions := data.InitSessionStore()
 
 	// Initialize endpoint handlers
-	accounts := account.NewHandler(pool)
+	accounts := account.NewHandler(pool, sessions)
 
 	// Setup routes
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthCheck)
 	mux.HandleFunc("/users/register", accounts.Register())
+	mux.HandleFunc("/users/login", accounts.Login())
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
