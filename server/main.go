@@ -7,6 +7,7 @@ import (
 
 	"github.com/fkonkol/javelin/server/account"
 	"github.com/fkonkol/javelin/server/data"
+	"github.com/fkonkol/javelin/server/messaging"
 )
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
@@ -33,12 +34,14 @@ func main() {
 
 	// Initialize endpoint handlers
 	accounts := account.NewHandler(pool, sessions)
+	messages := messaging.NewHandler()
 
 	// Setup routes
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", accounts.Auth(healthCheck))
 	mux.HandleFunc("/users/register", accounts.Register())
 	mux.HandleFunc("/users/login", accounts.Login())
+	mux.HandleFunc("/ws", messages.ConnectionHandler)
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
