@@ -2,6 +2,8 @@ package account
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -9,7 +11,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -76,14 +77,15 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 		Password string `json:"password"`
 	}
 
-	query := "SELECT password FROM users WHERE email=$1"
+	query := "SELECT id, password FROM users WHERE email=$1"
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request Request
 		json.NewDecoder(r.Body).Decode(&request)
 
+		var userID int
 		var hashedPassword string
-		err := acc.db.QueryRow(context.Background(), query, request.Email).Scan(&hashedPassword)
+		err := acc.db.QueryRow(context.Background(), query, request.Email).Scan(&userID, &hashedPassword)
 		if err != nil {
 			log.Printf("User login query row error: %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -99,9 +101,16 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 			return
 		}
 
-		sessionToken := uuid.NewString()
+		bytes := make([]byte, 32)
+		_, err = rand.Read(bytes)
+		if err != nil {
+			log.Printf("User login random bytes error: %v\n", err)
+			return
+		}
 
-		_, err = acc.sessions.SetNX(context.Background(), sessionToken, request.Email, 60*time.Second).Result()
+		sessionID := hex.EncodeToString(bytes)
+
+		_, err = acc.sessions.SetNX(context.Background(), sessionID, userID, 60*time.Second).Result()
 		if err != nil {
 			log.Printf("User login session store error: %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -110,7 +119,8 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 
 		http.SetCookie(w, &http.Cookie{
 			Name:     "sid",
-			Value:    sessionToken,
+			Value:    sessionID,
+			Path:     "/",
 			MaxAge:   60,
 			HttpOnly: true,
 		})

@@ -4,7 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 )
+
+type ContextKey string
+
+const SessionKey ContextKey = "session"
 
 func (acc *AccountHandler) Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -20,13 +25,22 @@ func (acc *AccountHandler) Auth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		_, err = acc.sessions.Get(context.Background(), sessionCookie.Value).Result()
+		res, err := acc.sessions.Get(context.Background(), sessionCookie.Value).Result()
 		if err != nil {
 			fmt.Println("Session token not cached")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		next(w, r)
+		uid, err := strconv.Atoi(res)
+		if err != nil {
+			fmt.Printf("Auth middleware string to int error: %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), SessionKey, uid)
+
+		next(w, r.WithContext(ctx))
 	}
 }

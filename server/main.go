@@ -36,7 +36,7 @@ func main() {
 
 	// Setup routes
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthCheck)
+	mux.HandleFunc("/health", accounts.Auth(healthCheck))
 	mux.HandleFunc("/users/register", accounts.Register())
 	mux.HandleFunc("/users/login", accounts.Login())
 
