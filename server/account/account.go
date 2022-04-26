@@ -15,6 +15,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Time in seconds after which session times out.
+const SESSION_TIME int = 120
+
 type AccountHandler struct {
 	db       *pgxpool.Pool
 	sessions *redis.Client
@@ -110,7 +113,7 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 
 		sessionID := hex.EncodeToString(bytes)
 
-		_, err = acc.sessions.SetNX(context.Background(), sessionID, userID, 60*time.Second).Result()
+		_, err = acc.sessions.SetNX(context.Background(), sessionID, userID, time.Duration(SESSION_TIME)*time.Second).Result()
 		if err != nil {
 			log.Printf("User login session store error: %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -121,8 +124,9 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 			Name:     "sid",
 			Value:    sessionID,
 			Path:     "/",
-			MaxAge:   60,
+			MaxAge:   SESSION_TIME,
 			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
 		})
 	}
 }
