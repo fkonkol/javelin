@@ -1,9 +1,8 @@
 import React from 'react';
-import { Login } from './routes/Login';
 
 const App: React.FC = () => {
   return (
-    <Login />
+    <React.Fragment>Hello</React.Fragment>    
   );
 }
 

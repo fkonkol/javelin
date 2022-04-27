@@ -40,7 +40,7 @@ export const Login: React.FC = () => {
         <Logo className="w-full h-16 pointer-events-none select-none" />
         <p className="text-2xl font-extralight tracking-wide text-center">Welcome back!</p>
         <p className="text-sm text-center text-slate-400 pt-2">
-          Don't have an account? <Link to="/" className="text-black">Sign up</Link>
+          Don't have an account? <Link to="/register" className="text-black">Sign up</Link>
         </p>
         <form onSubmit={handleSubmit}>
           <div className="w-full h-12 rounded-md border-2 border-slate-200 focus-within:border-black my-6">

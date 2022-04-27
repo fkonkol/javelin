@@ -41,7 +41,7 @@ export const Register: React.FC = () => {
         <Logo className="w-full h-16 pointer-events-none select-none" />
         <p className="text-2xl font-extralight tracking-wide text-center">Welcome!</p>
         <p className="text-sm text-center text-slate-400 pt-2">
-          Already have an account? <Link to="/" className="text-black">Sign in</Link>
+          Already have an account? <Link to="/login" className="text-black">Sign in</Link>
         </p>
         <form onSubmit={handleSubmit}>
           <div className="w-full h-12 rounded-md border-2 border-slate-200 focus-within:border-black my-6">
