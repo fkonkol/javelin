@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -45,12 +44,6 @@ func (acc *AccountHandler) Register() http.HandlerFunc {
 		json.NewDecoder(r.Body).Decode(&request)
 
 		// Basic input validation
-		err := validator.New().Struct(request)
-		if err != nil {
-			log.Printf("User register input validation error: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 
 		// Hash password with bcrypt
 		hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
@@ -126,7 +119,7 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 			Path:     "/",
 			MaxAge:   SESSION_TIME,
 			HttpOnly: true,
-			SameSite: http.SameSiteStrictMode,
+			SameSite: http.SameSiteLaxMode,
 		})
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/fkonkol/javelin/server/account"
 	"github.com/fkonkol/javelin/server/data"
 	"github.com/fkonkol/javelin/server/messaging"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 )
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
@@ -37,11 +39,21 @@ func main() {
 	messages := messaging.NewHandler()
 
 	// Setup routes
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", accounts.Auth(healthCheck))
-	mux.HandleFunc("/users/register", accounts.Register())
-	mux.HandleFunc("/users/login", accounts.Login())
-	mux.HandleFunc("/ws", messages.ConnectionHandler)
+	r := chi.NewRouter()
+	r.Use(cors.Handler(cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"http://localhost:3000"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
+	r.Get("/health", accounts.Auth(healthCheck))
+	r.Post("/users/register", accounts.Register())
+	r.Post("/users/login", accounts.Login())
+	r.Post("/ws", messages.ConnectionHandler)
 
-	log.Fatal(http.ListenAndServe(":8000", mux))
+	log.Fatal(http.ListenAndServe(":8000", r))
 }

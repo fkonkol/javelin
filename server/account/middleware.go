@@ -15,6 +15,7 @@ const SessionKey ContextKey = "session"
 
 func (acc *AccountHandler) Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		sessionCookie, err := r.Cookie("sid")
 		if err != nil {
 			fmt.Println("Cookie not present in request")
@@ -68,7 +69,7 @@ func (acc *AccountHandler) Auth(next http.HandlerFunc) http.HandlerFunc {
 				Path:     "/",
 				MaxAge:   SESSION_TIME,
 				HttpOnly: true,
-				SameSite: http.SameSiteStrictMode,
+				SameSite: http.SameSiteLaxMode,
 			})
 		}
 
