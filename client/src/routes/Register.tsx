@@ -9,7 +9,7 @@ interface UserNode {
   password: string;
 }
 
-export const Login: React.FC = () => {
+export const Register: React.FC = () => {
   const [user, setUser] = useState<UserNode>({ email: "", username: "", password: "" });
 
   let navigate = useNavigate();
