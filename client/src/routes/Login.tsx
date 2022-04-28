@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch } from '../app/hooks';
 
 import { ReactComponent as Logo } from '../assets/img/full-gray.svg';
+import { loggedIn } from '../features/auth/slice';
 
 interface UserNode {
   email: string;
@@ -10,6 +12,8 @@ interface UserNode {
 
 export const Login: React.FC = () => {
   const [user, setUser] = useState<UserNode>({ email: "", password: "" });
+
+  const dispatch = useAppDispatch();
 
   let navigate = useNavigate();
 
@@ -25,12 +29,11 @@ export const Login: React.FC = () => {
       body: JSON.stringify(user),
     });
 
-    console.log(await response.json());
-
     if (response.status !== 200) {
       return;
     }
 
+    dispatch(loggedIn());
     navigate("/chat", { replace: true });
   }
 
