@@ -123,3 +123,49 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 		})
 	}
 }
+
+func (acc *AccountHandler) GetUserByUsername() http.HandlerFunc {
+	type Request struct {
+		Username string `json:"username"`
+	}
+
+	type User struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+	}
+
+	type Response struct {
+		Users []User `json:"users"`
+	}
+
+	query := `SELECT id, username FROM users WHERE username LIKE '%'||$1||'%'`
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request Request
+		request.Username = r.URL.Query().Get("username")
+
+		rows, err := acc.db.Query(context.Background(), query, request.Username)
+		if err != nil {
+			log.Printf("Get user by username query error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		defer rows.Close()
+
+		var response Response
+		for rows.Next() {
+			var user User
+			err := rows.Scan(&user.ID, &user.Username)
+			if err != nil {
+				log.Printf("Rows scan error: %v\n", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			response.Users = append(response.Users, user)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(&response)
+	}
+}

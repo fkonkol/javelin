@@ -7,7 +7,6 @@ import (
 
 	"github.com/fkonkol/javelin/server/account"
 	"github.com/fkonkol/javelin/server/data"
-	"github.com/fkonkol/javelin/server/messaging"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
@@ -36,7 +35,6 @@ func main() {
 
 	// Initialize endpoint handlers
 	accounts := account.NewHandler(pool, sessions)
-	messages := messaging.NewHandler()
 
 	// Setup routes
 	r := chi.NewRouter()
@@ -53,7 +51,7 @@ func main() {
 	r.Get("/health", accounts.Auth(healthCheck))
 	r.Post("/users/register", accounts.Register())
 	r.Post("/users/login", accounts.Login())
-	r.Post("/ws", messages.ConnectionHandler)
+	r.Get("/users", accounts.GetUserByUsername())
 
 	log.Fatal(http.ListenAndServe(":8000", r))
 }
