@@ -18,8 +18,9 @@ func HandleNewConnection(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
 
 	newClient := Client{
-		ID:     getNextID(),
-		Socket: conn,
+		ID:       getNextID(),
+		Username: "",
+		Socket:   conn,
 	}
 
 	clients = append(clients, &newClient)
