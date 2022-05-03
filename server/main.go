@@ -7,6 +7,7 @@ import (
 
 	"github.com/fkonkol/javelin/server/account"
 	"github.com/fkonkol/javelin/server/data"
+	"github.com/fkonkol/javelin/server/messaging"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
@@ -52,6 +53,7 @@ func main() {
 	r.Post("/users/register", accounts.Register())
 	r.Post("/users/login", accounts.Login())
 	r.Get("/users", accounts.GetUserByUsername())
+	r.Get("/ws", messaging.HandleNewConnection)
 
 	log.Fatal(http.ListenAndServe(":8000", r))
 }

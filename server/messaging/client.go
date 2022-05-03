@@ -1,6 +1,11 @@
 package messaging
 
-import "github.com/gorilla/websocket"
+import (
+	"fmt"
+	"log"
+
+	"github.com/gorilla/websocket"
+)
 
 type Client struct {
 	ID     int `json:"id"`
@@ -15,7 +20,8 @@ func (c *Client) Listen() {
 	for {
 		err := c.Socket.ReadJSON(&message)
 		if err != nil {
-			// Release connection
+			log.Printf("Releasing websocket connection: %d\n", c.ID)
+			c.Socket.Close()
 		}
 
 		HandleMessage(c, message)
@@ -25,7 +31,12 @@ func (c *Client) Listen() {
 func HandleMessage(c *Client, m *Message) {
 	switch m.Action {
 	case "INITIAL_CONNECTION":
-		// Client joined a thread specified in message struct
+		newConnMsg := Message{
+			SenderID: 0,
+			Username: "System",
+			Body:     fmt.Sprintf("%d has joined the chat", c.ID),
+		}
+		newConnMsg.Broadcast()
 
 	case "WRITE_MESSAGE":
 	}
