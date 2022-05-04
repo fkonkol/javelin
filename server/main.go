@@ -49,10 +49,12 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
+
 	r.Get("/health", accounts.Auth(healthCheck))
 	r.Post("/users/register", accounts.Register())
 	r.Post("/users/login", accounts.Login())
 	r.Get("/users", accounts.GetUserByUsername())
+	r.Get("/auth", accounts.Auth(func(w http.ResponseWriter, r *http.Request) {}))
 	r.Get("/ws", messaging.HandleNewConnection)
 
 	log.Fatal(http.ListenAndServe(":8000", r))

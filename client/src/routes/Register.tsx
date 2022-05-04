@@ -26,8 +26,6 @@ export const Register: React.FC = () => {
       body: JSON.stringify(user),
     });
 
-    console.log(await response.json());
-
     if (response.status !== 200) {
       return;
     }

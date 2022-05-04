@@ -1,17 +1,22 @@
-import { AnyArray } from 'immer/dist/internal';
-import React, { ReactElement } from 'react';
-import { Navigate, Route } from 'react-router-dom';
-import { Login } from '../routes/Login';
+import React, { useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import useStore from '../store/store';
 
 interface Props {
-  Component: any;
-  [rest:string]: any;
+  children: JSX.Element;
 }
 
-export const PrivateRoute: React.FC<Props> = ({ Component, ...rest }) => {
+export const PrivateRoute: React.FC<Props> = ({ children }) => {
+  const auth = useStore(state => state.auth);
   const loggedIn = useStore(state => state.loggedIn);
-  console.log(loggedIn);
 
-  return loggedIn ? <Component {...rest} /> : <Navigate to="/login" />;
+  useEffect(() => {
+    const checkAuth = async () => await auth();
+    checkAuth();
+  }, [auth]);
+
+  if (!loggedIn) {
+    return <Navigate to="/login" />;
+  }
+  return children;
 };
