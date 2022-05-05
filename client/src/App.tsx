@@ -6,6 +6,7 @@ import { Register } from './routes/Register';
 import { PrivateRoute } from './components/PrivateRoute';
 import { Chat } from './routes/Chat';
 import Home from './routes/Home';
+import { PageNotFound } from './routes/PageNotFound';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const App: React.FC = () => {
           <Chat />
         </PrivateRoute>
       } />
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
   </BrowserRouter> 
   );
