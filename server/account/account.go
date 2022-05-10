@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -15,7 +16,11 @@ import (
 )
 
 // Time in seconds after which session times out.
-const SESSION_TIME int = 120
+const SESSION_TIME int = 5
+
+// Time in seconds after which user has to log in manually again.
+// Value set to 7 days.
+const PERSIST_SESSION_TIME int = 604800
 
 type AccountHandler struct {
 	db       *pgxpool.Pool
@@ -73,15 +78,17 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 		Password string `json:"password"`
 	}
 
-	query := "SELECT id, password FROM users WHERE email=$1"
+	query := "SELECT id, username, password FROM users WHERE email=$1"
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request Request
 		json.NewDecoder(r.Body).Decode(&request)
 
+		// TODO: Change to DBQueryResponse struct
 		var userID int
+		var username string
 		var hashedPassword string
-		err := acc.db.QueryRow(context.Background(), query, request.Email).Scan(&userID, &hashedPassword)
+		err := acc.db.QueryRow(context.Background(), query, request.Email).Scan(&userID, &username, &hashedPassword)
 		if err != nil {
 			log.Printf("User login query row error: %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -113,13 +120,42 @@ func (acc *AccountHandler) Login() http.HandlerFunc {
 			return
 		}
 
+		bytes = make([]byte, 32)
+		_, err = rand.Read(bytes)
+		if err != nil {
+			log.Printf("User login persist random bytes error: %v\n", err)
+			return
+		}
+
+		key := hex.EncodeToString(bytes)
+		persistID := fmt.Sprintf("%s.%s", username, key)
+
+		// Map username to buffer value
+		_, err = acc.sessions.SetNX(context.Background(), key, username, time.Duration(PERSIST_SESSION_TIME)*time.Second).Result()
+		if err != nil {
+			log.Printf("User login persist store error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Cookie used for authentication and authorization
 		http.SetCookie(w, &http.Cookie{
 			Name:     "sid",
 			Value:    sessionID,
 			Path:     "/",
 			MaxAge:   SESSION_TIME,
 			HttpOnly: true,
-			SameSite: http.SameSiteLaxMode,
+			SameSite: http.SameSiteLaxMode, // Frontend runs on different port, so we can't use strict mode
+		})
+
+		// Cookie used for login persistence
+		http.SetCookie(w, &http.Cookie{
+			Name:     "persist",
+			Value:    persistID,
+			Path:     "/",
+			MaxAge:   PERSIST_SESSION_TIME,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode, // Frontend runs on different port, so we can't use strict mode
 		})
 	}
 }
