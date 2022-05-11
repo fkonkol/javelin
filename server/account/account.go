@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -203,5 +206,48 @@ func (acc *AccountHandler) GetUserByUsername() http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(&response)
+	}
+}
+
+func (acc *AccountHandler) SendFriendRequest() http.HandlerFunc {
+	type FriendshipStatus string
+	//Friendship status as declared in database schema
+	const senderStatus FriendshipStatus = "PENDING_SENT"
+	const receiverStatus FriendshipStatus = "PENDING_RECEIVED"
+
+	query := `
+		INSERT INTO friends (uuid, status, user_id, friend_id) 
+		VALUES ($1, $2::text::friends_status, $3, $4)
+	`
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(SessionKey).(int)
+
+		friendParam := r.URL.Query().Get("friend_id")
+		friendID, err := strconv.Atoi(friendParam)
+		if err != nil {
+			log.Printf("Send friend request invalid parameter: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		friendshipUUID := uuid.NewString()
+		friendshipUUID = strings.Replace(friendshipUUID, "-", "", -1)
+
+		// Create pending friendship between users
+		_, err = acc.db.Exec(context.Background(), query, friendshipUUID, senderStatus, userID, friendID)
+		if err != nil {
+			log.Printf("Send friend request db query error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		_, err = acc.db.Exec(context.Background(), query, friendshipUUID, receiverStatus, friendID, userID)
+		if err != nil {
+			log.Printf("Send friend request db query error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
 	}
 }

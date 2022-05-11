@@ -54,6 +54,7 @@ func main() {
 	r.Post("/users/register", accounts.Register())
 	r.Post("/users/login", accounts.Login())
 	r.Get("/users", accounts.GetUserByUsername())
+	r.Post("/users/invite", accounts.Auth(accounts.SendFriendRequest()))
 	r.Get("/auth", accounts.Auth(func(w http.ResponseWriter, r *http.Request) {}))
 	r.Get("/ws", messaging.HandleNewConnection)
 
