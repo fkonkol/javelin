@@ -251,3 +251,50 @@ func (acc *AccountHandler) SendFriendRequest() http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 	}
 }
+
+func (acc *AccountHandler) AcceptFriendRequest() http.HandlerFunc {
+	query := `
+		UPDATE friends
+		SET status = 'ACCEPTED'
+		WHERE 
+		user_id = $1 AND 
+		friend_id = $2 AND 
+		status = 'PENDING_RECEIVED'
+	`
+
+	query2 := `
+		UPDATE friends
+		SET status = 'ACCEPTED'
+		WHERE 
+		user_id = $1 AND 
+		friend_id = $2 AND 
+		status = 'PENDING_SENT'
+	`
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(SessionKey).(int)
+
+		friendParam := r.URL.Query().Get("friend_id")
+		friendID, err := strconv.Atoi(friendParam)
+		if err != nil {
+			log.Printf("Accept friend request invalid parameter: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		_, err = acc.db.Exec(context.Background(), query, userID, friendID)
+		if err != nil {
+			log.Printf("Accept friend request db exec error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		_, err = acc.db.Exec(context.Background(), query2, friendID, userID)
+		if err != nil {
+			log.Printf("Accept friend request db exec error 2: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
