@@ -1,11 +1,13 @@
 package account
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -296,5 +298,60 @@ func (acc *AccountHandler) AcceptFriendRequest() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+// Maximum avatar size that can be uploaded by a user.
+// Current value is set to 1 MiB
+const MAX_AVATAR_SIZE int64 = 1 << 10
+
+// TODO: S3 upload
+func (acc *AccountHandler) UploadAvatar() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Limit the request body size to the value of a constant.
+		r.Body = http.MaxBytesReader(w, r.Body, MAX_AVATAR_SIZE)
+
+		reader, err := r.MultipartReader()
+		if err != nil {
+			log.Printf("Uploaded file is too big: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		part, err := reader.NextPart()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if part.FormName() != "user_avatar" {
+			log.Println("user_avatar is expected")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		buffer := bufio.NewReader(part)
+		sniff, _ := buffer.Peek(512)
+		contentType := http.DetectContentType(sniff)
+		if contentType != "image/png" && contentType != "image/jpeg" {
+			log.Printf("Invalid file type: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		file, err := ioutil.TempFile("images", "upload-*.jpg")
+		if err != nil {
+			log.Printf("Temp file error: %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+
+		filebuf, _ := ioutil.ReadAll(buffer)
+		fmt.Println(filebuf)
+		file.Write(filebuf)
+
+		log.Println("Uploaded image")
 	}
 }
