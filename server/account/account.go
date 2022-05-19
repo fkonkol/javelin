@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -303,7 +304,7 @@ func (acc *AccountHandler) AcceptFriendRequest() http.HandlerFunc {
 
 // Maximum avatar size that can be uploaded by a user.
 // Current value is set to 1 MiB
-const MAX_AVATAR_SIZE int64 = 1 << 10
+const MAX_AVATAR_SIZE int64 = 1 << 20
 
 // TODO: S3 upload
 func (acc *AccountHandler) UploadAvatar() http.HandlerFunc {
@@ -340,7 +341,15 @@ func (acc *AccountHandler) UploadAvatar() http.HandlerFunc {
 			return
 		}
 
-		file, err := ioutil.TempFile("images", "upload-*.jpg")
+		var file *os.File
+
+		switch contentType {
+		case "image/png":
+			file, err = ioutil.TempFile("images", "*.png")
+		case "image/jpeg":
+			file, err = ioutil.TempFile("images", "*.jpg")
+		}
+
 		if err != nil {
 			log.Printf("Temp file error: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
